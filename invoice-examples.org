@@ -1,0 +1,34 @@
+* Invoices
+** Client Foo (Jan 01 - Jan 15)
+*** [2008-01-01 Tue] Built New Server for Production
+*** [2008-01-02 Wed] Meeting with Team to Design New System
+
+** Client Bar (Jan 01 - Jan 15)
+*** [2008-01-01 Tue] Searched for Widgets on Google
+*** [2008-01-02 Wed] Billed You for Taking a Nap
+
+
+* Invoices
+** An Invoice Header
+*** [2008-11-25 Tue] An Invoice Item
+    :PROPERTIES:
+    :WORK: 10:12
+    :RATE: 100
+    :END:
+    
+*** Invoice Report
+#+BEGIN: invoice
+| Task / Date                |  Time |   Price |
+|----------------------------+-------+---------|
+| Tuesday, November 25, 2008 | 10:12 | 1020.00 |
+| An Invoice Item            | 10:12 | 1020.00 |
+|----------------------------+-------+---------|
+| Subtotal:                  | 10:12 | 1020.00 |
+|----------------------------+-------+---------|
+| TVQ(9.97%):                |       |  101.74 |
+|----------------------------+-------+---------|
+| TPS(5.00%):                |       |   51.00 |
+|----------------------------+-------+---------|
+| Total:                     |       | 1172.74 |
+
+#+END:

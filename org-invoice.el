@@ -1,6 +1,7 @@
 ;;; org-invoice.el --- Help manage client invoices in OrgMode
 ;;
 ;; Copyright (C) 2008-2014 pmade inc. (Peter Jones pjones@pmade.com)
+;; Copyright (C) 2021 Skalman skalman@riseup.net 
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -34,8 +35,11 @@
 ;; this invoice information and use it in other ways, such as
 ;; submitting it to on-line invoicing tools.
 ;;
-;; I'm already working on an elisp package to submit this invoice data
-;; to the FreshBooks on-line accounting tool.
+;;
+;; Fri Aug 27 2021
+;; Capability added to include federal and local sale tax such as VAT.
+;; If the rate of these taxes are set to zero they do not show up in
+;; invoice.
 ;;
 ;; Usage:
 ;;
@@ -50,7 +54,7 @@
 ;;
 ;; Latest version:
 ;;
-;; git clone git://pmade.com/elisp
+;; git@github.com:drskalman/org-invoice.git
 (eval-when-compile
   (require 'cl)
   (require 'org))
@@ -106,6 +110,22 @@ alist for the current heading.
 This hook is called repeatedly for each invoice item processed."
   :type 'hook :group 'org-invoice)
 
+(defcustom org-invoice-federal-tax-name "TPS"
+  "The name for the local sale tax name"
+  :type 'string :group 'org-invoice)
+
+(defcustom org-invoice-local-tax-name "TVQ"
+  "The name for the local sale tax name"
+  :type 'string :group 'org-invoice)
+
+(defcustom org-invoice-federal-tax-rate 5
+  "The name for the local sale tax name" 
+  :type 'float :group 'org-invoice)
+
+(defcustom org-invoice-local-tax-rate 9.975
+  "The name for the local sale tax name"
+  :type 'float :group 'org-invoice)
+
 (defvar org-invoice-current-invoice nil
   "Information about the current invoice.")
 
@@ -117,6 +137,9 @@ This hook is called repeatedly for each invoice item processed."
 
 (defvar org-invoice-total-time nil
   "The total invoice time for the summary line.")
+
+(defvar org-invoice-subtotal-price nil
+  "The total invoice price for the summary line.")
 
 (defvar org-invoice-total-price nil
   "The total invoice price for the summary line.")
@@ -250,10 +273,31 @@ looks like tree2, where the level is 2."
       (mapc 'org-invoice-info-to-table (if with-header (cdr info) (cdr (cdr info)))))
     (when with-summary
       (insert-before-markers
-       (concat "|-\n|Total:|"
+       (concat "|-\n|Subtotal:|"
                (org-minutes-to-clocksum-string org-invoice-total-time)
                (and with-price (concat "|" (format "%.2f" org-invoice-total-price)))
-               "|\n")))))
+               "|\n"))
+      (let* ((local-tax-amount (/ (* org-invoice-local-tax-rate org-invoice-total-price) 100.00))
+	     (federal-tax-amount (/ (* org-invoice-federal-tax-rate org-invoice-total-price) 100.00))
+             (total-include-tax (+ org-invoice-total-price local-tax-amount federal-tax-amount)))
+	(unless (= org-invoice-local-tax-rate 0) (insert-before-markers
+	 (concat "|-\n|" (concat org-invoice-local-tax-name "(" (format "%.2f" org-invoice-local-tax-rate) "%)") ":|"
+		 (and with-price (concat "|" (format "%.2f" local-tax-amount)))
+		 "|\n")))
+	(unless (= org-invoice-federal-tax-rate 0) (insert-before-markers
+	 (concat "|-\n|" (concat org-invoice-federal-tax-name "(" (format "%.2f" org-invoice-federal-tax-rate) "%)")  ":|"
+		 (and with-price (concat "|" (format "%.2f" federal-tax-amount)))
+		 "|\n")))
+	(insert-before-markers
+	 (concat "|-\n|Total:|"
+		 (and with-price (concat "|" (format "%.2f" total-include-tax)))
+		 "|\n"))
+	)
+      )
+    )
+  )
+
+  
 
 (defun org-invoice-collect-invoice-data ()
   "Collect all the invoice data from the current OrgMode tree and
